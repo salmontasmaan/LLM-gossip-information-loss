@@ -55,3 +55,13 @@ COVERAGE_THRESHOLD = 0.80                     # cosine >= this => a source sente
 # ------------------------------------------------------- hypothesis testing
 EPSILON = 0.10                 # tolerable loss: up to 10% of the source's verifiable details may be lost
 ALPHA = 0.05                   # significance level (Holm-adjusted where several tests are run together)
+
+# ------------------------------------------------------ sentence-correctness check
+JUDGE_MODEL = CHAT_MODEL    # fact-checking model
+JUDGE_NOTES_PER_RULE = 6       # notes sampled per merge rule (6 x 5 rules = 30 notes)
+
+
+def notes_path_for(csv_path) -> Path:
+    """Final notes are saved next to the results CSV: gossip_results.csv -> gossip_results_notes.jsonl"""
+    p = Path(csv_path)
+    return p.with_name(p.stem + "_notes.jsonl")

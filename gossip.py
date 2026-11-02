@@ -19,8 +19,9 @@ def make_shards(sentences: list[str], n: int) -> list[list[str]]:
     return shards
 
 
-def run_gossip(doc_id: str, sentences: list[str], source: dict, rule: str, seed: int, llm) -> list[dict]:
-    """Run one full simulation; return one metrics row per round (round 0 = before gossip)."""
+def run_gossip(doc_id: str, sentences: list[str], source: dict, rule: str, seed: int, llm):
+    """Run one full simulation. Returns (rows, final_notes): one metrics row per round (round 0 = before gossip)
+    and each agent's final note (needed by check_sentences.py)."""
     init_fn, merge_fn = RULES[rule]
     rng = random.Random(seed)                 # controls peer selection -> reproducible topology
     n = config.N_AGENTS
@@ -50,4 +51,4 @@ def run_gossip(doc_id: str, sentences: list[str], source: dict, rule: str, seed:
             states[i] = states[j] = merged    # ...and both adopt it (push-pull exchange)
             ctx["merges"] += 1                # one merge call per exchange (cost accounting)
         snapshot(r)
-    return rows
+    return rows, list(states)

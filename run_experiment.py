@@ -5,6 +5,7 @@ Usage:  python run_experiment.py
 import argparse
 import json
 import os
+from pathlib import Path
 
 import pandas as pd
 from tqdm import tqdm
@@ -40,7 +41,11 @@ def main():
     for doc, rule, seed in tqdm(jobs, desc="gossip runs"):
         if doc["id"] not in sources:
             sources[doc["id"]] = build_source(doc["sentences"], llm)
-        rows = run_gossip(doc["id"], doc["sentences"], sources[doc["id"]], rule, seed, llm)
+        rows, final_notes = run_gossip(doc["id"], doc["sentences"], sources[doc["id"]], rule, seed, llm)
+        with open(config.notes_path_for(args.out), "a", encoding="utf-8") as f:    # save notes BEFORE marking the run done
+            for agent, note in enumerate(final_notes):
+                f.write(json.dumps({"doc_id": doc["id"], "rule": rule, "seed": seed, "agent": agent,
+                                    "note": note}, ensure_ascii=False) + "\n")
         pd.DataFrame(rows).to_csv(args.out, mode="a", index=False,
                                   header=not os.path.exists(args.out))   # header only for a new file
 
