@@ -7,9 +7,8 @@ Loss L = 1 - pool_anchor_recall at the final round: the share of the source's ve
 The Wilcoxon signed-rank test does not need normality. It tests the median (more precisely the centre of
 a roughly symmetric distribution) and drops pages that tie exactly with the tested value.
 
-RQ1  one-sample, one-sided test on EVERY rule:   H0: median L <= EPSILON   vs  H1: median L > EPSILON
-RQ2a paired, one-sided test, rule vs llm_naive:  H0: median(L_naive - L_rule) <= 0  vs  H1: > 0
-RQ2b one-sample, one-sided test on EVERY rule:   H0: median L >= EPSILON   vs  H1: median L < EPSILON
+RQ1, one-sample, one-sided test on EVERY rule:   H0: median L <= EPSILON   vs  H1: median L > EPSILON
+RQ2, paired, one-sided test, rule vs llm_naive:  H0: median(L_naive - L_rule) <= 0  vs  H1: > 0
 Each family is Holm-corrected across the rules in it.
 
 Usage:  python hypothesis_tests.py [--csv path] [--round N]"""
@@ -135,24 +134,15 @@ def main():
     report(rows, "RQ1", res, adj, "median", "reject H0 (loss exceeds tolerance)", eps)
     warn_if_underpowered(res, "RQ1")
 
-    # ----------------------------------------------------------------- RQ2a
+    # ----------------------------------------------------------------- RQ2
     rules = [r for r in CANDIDATES if r in loss.columns]
-    print("\n=== RQ2a: does each rule reduce loss relative to the unguarded LLM merge? ===")
+    print("\n=== RQ2: does each rule reduce loss relative to the unguarded LLM merge? ===")
     print("H0: median(L_naive - L_rule) <= 0   |   H1: median(L_naive - L_rule) > 0   "
           "(paired, one-sided Wilcoxon signed-rank, Holm-adjusted)")
     res = {rule: signed_rank((loss[NAIVE] - loss[rule]).dropna(), 0.0, "greater") for rule in rules}   # pair by page
     adj = holm({k: v["p"] for k, v in res.items()})
-    report(rows, "RQ2a", res, adj, "median reduction", "reject H0 (reduces loss)")
-    warn_if_underpowered(res, "RQ2a")
-
-    # ----------------------------------------------------------------- RQ2b
-    print(f"\n=== RQ2b: does each rule keep loss within the tolerable {eps:.0%}? ===")
-    print(f"H0: median loss >= {eps}   |   H1: median loss < {eps}   (one-sample, one-sided Wilcoxon signed-rank, "
-          f"Holm-adjusted across {len(all_rules)} rules)")
-    res = {rule: signed_rank(loss[rule].dropna(), eps, "less") for rule in all_rules}
-    adj = holm({k: v["p"] for k, v in res.items()})
-    report(rows, "RQ2b", res, adj, "median", "reject H0 (within tolerance)", eps)
-    warn_if_underpowered(res, "RQ2b")
+    report(rows, "RQ2", res, adj, "median reduction", "reject H0 (reduces loss)")
+    warn_if_underpowered(res, "RQ2")
 
     out = config.RESULTS_DIR / "hypothesis_tests.csv"
     pd.DataFrame(rows).to_csv(out, index=False)
